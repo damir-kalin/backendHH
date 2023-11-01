@@ -65,10 +65,11 @@ class S(BaseHTTPRequestHandler):
                         logging.info("%s - The 'city_id' parameter is not specified", datetime.now())
                     try:
                         date_search = data_in_post['date']
-                        logging.info("%s - date_from = %s", datetime.now(), date_search)
+                        logging.info("%s - date = %s", datetime.now(), date_search)
                         params['date_from'] = date_search
+                        params['date_to'] = date_search
                     except:
-                        logging.info("%s - The 'date_to' parameter is not specified", datetime.now())
+                        logging.info("%s - The 'date' parameter is not specified", datetime.now())
                     logging.info("%s - Start parse...", datetime.now())
 
                     for page in range(0, 1):
@@ -88,6 +89,11 @@ class S(BaseHTTPRequestHandler):
                                         req_vacancy.close()
                                         vacancy_id = data_in_vacancy['id']
                                         logging.info('%s - vacancy_id = %s', datetime.now(), vacancy_id)
+
+                                        profession_name = None 
+                                        if data_in_vacancy.get('name') != None:
+                                            profession_name = data_in_vacancy['name']
+                                        logging.info('%s - profession_name = %s', datetime.now(), profession_name)
                                         salary_currency =None
                                         salary_from = None
                                         salary_to = None
@@ -123,7 +129,8 @@ class S(BaseHTTPRequestHandler):
                                         connection = self.get_connection_db()
                                         cursor = connection.cursor()
                                         try:
-                                            cursor.execute("call insert_vacancies (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", (int(vacancy_id), int(city_id), profession, salary_currency, salary_from, salary_to, experience, shedule, skills, published_dt))
+                                            cursor.execute("call insert_vacancies (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", \
+                                                           (int(vacancy_id), int(city_id), profession_name, salary_currency, salary_from, salary_to, experience, shedule, skills, published_dt))
                                             connection.commit()
                                             cursor.close()
                                             connection.close()
