@@ -1,10 +1,12 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 import psycopg2
+from psycopg2 import Error
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, date
 import time
+from bson.json_util import dumps
 
 POSTGRES_HOST = 'localhost'
 POSTGRES_PORT = 5432
@@ -29,8 +31,63 @@ class S(BaseHTTPRequestHandler):
 
     def do_GET(self):
         logging.info("GET request,\nPath: %s\nHeaders:\n%s\n", str(self.path), str(self.headers))
-        self._set_response()
-        self.wfile.write("GET request for {}".format(self.path).encode('utf-8'))
+        if self.path.startswith('/metrics'):
+            params = {}
+            try:
+                params = { x[:x.find('=')]:x[x.find('=')+1:] for x in self.path[self.path.find('?')+1:].split(sep='&')}
+                logging.info(params)
+            except:
+                logging.info("%s - Not parameters for sql script", datetime.now())
+            result = None
+            try:
+                logging.info("%s - Getting data from the database")
+                connection = self.get_connection_db()
+                cursor = connection.cursor()
+                if 'date_from' in params and 'date_to' in params:
+                    cursor.execute(f"select * from metrics m where dt between '{params['date_from']}' and '{params['date_to']}';")
+                    result = cursor.fetchall()
+                elif 'date_from' in params:
+                    cursor.execute(f"select * from metrics m where dt >= '{params['date_from']}';")
+                    result = cursor.fetchall()
+                else:
+                    cursor.execute(f"select * from metrics m where dt = '{date.today()}';")
+                    result = cursor.fetchall()
+            except:
+                logging.error("%s - Can`t establish connection to database", datetime.now())
+                self._set_response(code=504)
+                self.wfile.write("Can`t establish connection to database".encode('utf-8'))
+            finally:
+                cursor.close()
+                connection.close()
+                logging.info("Database connection closed")
+
+            if result is not None:
+                logging.info("%s - Transforms data")
+                result = [{
+                'city_id': x[0],
+                'profession_id': x[1],
+                'dt': str(x[2]),
+                'cnt': x[3],
+                'no_experience_cnt': x[4],
+                'between_1_and_3_cnt': x[5],
+                'between_3_and_6_cnt': x[6],
+                'more_than_6_cnt': x[7],
+                'avg_salary': x[8],
+                'no_experience_avg_salary': x[9],
+                'between_1_and_3_avg_salary': x[10],
+                'between_3_and_6_avg_salary': x[11],
+                'more_than_6_avg_salary': x[12],
+                'flexible_schedule_cnt': x[13],
+                'remote_schedule_cnt': x[14],
+                'full_day_schedule_cnt': x[15],
+                'shift_schedule_cnt': x[16],
+                'fly_in_fly_out_schedule_cnt': x[17]} for x in result]
+                js = dumps(result)            
+                self._set_response()
+                self.wfile.write(js.encode('utf-8'))
+                logging.info("%s - Request processed successfully")
+            else:
+                logging.info("%s There is no data in the database ", datetime.now())
 
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
@@ -49,7 +106,7 @@ class S(BaseHTTPRequestHandler):
                             # 'text': f'NAME:{profession}',  # Текст фильтра. В имени должно быть слово "Аналитик"
                             # 'area': city_id,  # Пои ск ощуществляется по вакансиям города Москва
                             'page': 0,  # Индекс страницы поиска на HH
-                            'per_page': 10  # Кол-во вакансий на 1 странице
+                            'per_page': 100  # Кол-во вакансий на 1 странице
                         }
                     try:
                         profession = data_in_post['profession']
@@ -67,12 +124,12 @@ class S(BaseHTTPRequestHandler):
                         date_search = data_in_post['date']
                         logging.info("%s - date = %s", datetime.now(), date_search)
                         params['date_from'] = date_search
-                        params['date_to'] = date_search
+                        # params['date_to'] = date_search
                     except:
                         logging.info("%s - The 'date' parameter is not specified", datetime.now())
                     logging.info("%s - Start parse...", datetime.now())
 
-                    for page in range(0, 1):
+                    for page in range(0, 2):
                         params['page'] = page
                         logging.info('%s - Get search pages with parameters %s', datetime.now(), params)
                         req_page = requests.get('https://api.hh.ru/vacancies', params)
@@ -126,16 +183,20 @@ class S(BaseHTTPRequestHandler):
                                         if data_in_vacancy.get('published_at') != None:
                                             published_dt = data_in_vacancy['published_at']
                                         logging.info('%s - published_dt = %s', datetime.now(), published_dt)
-                                        connection = self.get_connection_db()
-                                        cursor = connection.cursor()
                                         try:
+                                            connection = self.get_connection_db()
+                                            cursor = connection.cursor()
                                             cursor.execute("call insert_vacancies (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", \
-                                                           (int(vacancy_id), int(city_id), profession_name, salary_currency, salary_from, salary_to, experience, shedule, skills, published_dt))
+                                                            (int(vacancy_id), int(city_id), profession_name, salary_currency, salary_from, salary_to, experience, shedule, skills, published_dt))
                                             connection.commit()
-                                            cursor.close()
-                                            connection.close()
-                                        except:
-                                            logging.error("%s - Table vacancies or procedure insert_vacancies is not in the database", datetime.now())
+                                            logging.info("Data added successfully")
+                                        except (Exception, Error) as error:
+                                            logging.error("%s - Error Postgres: %s", datetime.now(), Error)
+                                        finally:
+                                            if connection:
+                                                cursor.close()
+                                                connection.close()
+                                                logging.info("Connection to PostgreSQL closed")
                                     else:
                                         logging.error("%s - Error captcha required!", datetime.now())
                                         req_vacancy.close()
