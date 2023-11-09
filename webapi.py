@@ -89,6 +89,51 @@ class S(BaseHTTPRequestHandler):
             else:
                 logging.info("%s There is no data in the database ", datetime.now())
 
+        if self.path.startswith('/skills'):
+            params = {}
+            try:
+                params = { x[:x.find('=')]:x[x.find('=')+1:] for x in self.path[self.path.find('?')+1:].split(sep='&')}
+                logging.info(params)
+            except:
+                logging.info("%s - Not parameters for sql script", datetime.now())
+            result = None
+            try:
+                logging.info("%s - Getting data from the database")
+                connection = self.get_connection_db()
+                cursor = connection.cursor()
+                if 'date_from' in params and 'date_to' in params:
+                    cursor.execute(f"select * from skills m where dt between '{params['date_from']}' and '{params['date_to']}';")
+                    result = cursor.fetchall()
+                elif 'date_from' in params:
+                    cursor.execute(f"select * from skills m where dt >= '{params['date_from']}';")
+                    result = cursor.fetchall()
+                else:
+                    cursor.execute(f"select * from skills m where dt = '{date.today()}';")
+                    result = cursor.fetchall()
+            except:
+                logging.error("%s - Can`t establish connection to database", datetime.now())
+                self._set_response(code=504)
+                self.wfile.write("Can`t establish connection to database".encode('utf-8'))
+            finally:
+                cursor.close()
+                connection.close()
+                logging.info("Database connection closed")
+
+            if result is not None:
+                logging.info("%s - Transforms data")
+                result = [{
+                'city_id': x[0],
+                'profession_id': x[1],
+                'dt': str(x[2]),
+                'name': x[3],
+                'cnt': x[4]} for x in result]
+                js = dumps(result)            
+                self._set_response()
+                self.wfile.write(js.encode('utf-8'))
+                logging.info("%s - Request processed successfully")
+            else:
+                logging.info("%s There is no data in the database ", datetime.now())
+
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
         post_data = self.rfile.read(content_length) # <--- Gets the data itself
