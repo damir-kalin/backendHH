@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 import json
 
 
-url = 'http://localhost:8080/skills'
+url = 'http://localhost:8080/metrics'
 
 data = {'date_from': str(date(2023,10,29))
         #,'date_to': str(date(2023,10,29))

@@ -1,9 +1,8 @@
-http
+http 
 logging
 psycopg2
-requests
+requests == 2.31.0
 json
 datetime
 time
-requests
-pymongo
+pymongo == 4.6.0
