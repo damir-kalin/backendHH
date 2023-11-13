@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 
 
 # response = requests.post('http://localhost:8080/parse/1/1')
-url = 'http://localhost:8080/parse'
+url = 'http://localhost:80/parse'
 headers = {'Content-type': 'application/json',
            'Accept': 'text/plain',
            'Content-Encoding': 'utf-8'}

@@ -8,11 +8,11 @@ from datetime import datetime, date
 import time
 from bson.json_util import dumps
 
-POSTGRES_HOST = 'localhost'
-POSTGRES_PORT = 5432
-POSTGRES_DB = 'stand-db'
+POSTGRES_HOST = 'stand-db'
+POSTGRES_PORT = 5433
+POSTGRES_DB = 'stand_db'
 POSTGRES_USER = 'postgres'
-POSTGRES_PASSWORD = 'postgres'
+POSTGRES_PASSWORD = 'stand'
 
 class S(BaseHTTPRequestHandler):
     def _set_response(self, code=200):
@@ -22,7 +22,7 @@ class S(BaseHTTPRequestHandler):
     
     def get_connection_db(self):
         try:
-            conn = psycopg2.connect(dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host=POSTGRES_HOST)
+            conn = psycopg2.connect(dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host=POSTGRES_HOST, port=POSTGRES_PORT)
             logging.info("%s - Database connection successful", datetime.now())
             return conn
         except:
@@ -278,7 +278,7 @@ class S(BaseHTTPRequestHandler):
 
 
 
-def run(server_class=HTTPServer, handler_class=S, port=8080):
+def run(server_class=HTTPServer, handler_class=S, port=80):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
