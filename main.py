@@ -2,11 +2,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 import psycopg2
 import json
-from sys import argv
 from datetime import datetime
 import requests
 import time
-
+from sys import argv
+from bson.json_util import dumps
 
 class S(BaseHTTPRequestHandler):
 
@@ -17,14 +17,14 @@ class S(BaseHTTPRequestHandler):
                 config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
                 logging.info("%s - Read config", datetime.now())
         except:
-            logging.error("%s - config.txt file is missing", datetime.now())
+            logging.error("%s - _config file is missing", datetime.now())
         if config:
             try:
                 connection = psycopg2.connect(host=config['HOST'], port=int(config['PORT']), dbname=config['NAME_DATABASE'], user=config['USER'], password=config['PASSWORD'])
                 logging.info("%s - Database connection successful", datetime.now())
                 return connection
             except:
-                self._set_response(2)
+                self._set_response(500, ['Content-type', 'text/html'],"Can`t establish connection to database")
     
     def get_parameters_for_parse(self, post_data):
         if post_data != b'':
@@ -53,37 +53,17 @@ class S(BaseHTTPRequestHandler):
                 logging.info("%s - Parameters collected for parsing", datetime.now())
                 return parameters
             else:
-                self._set_response(4)
+                self._set_response(500, ['Content-type', 'text/html'], "Missing parameters in json format (profession, city_id, date)")
                 return
         else:
-            self._set_response(4)
+            self._set_response(500, ['Content-type', 'text/html'], "Missing parameters in json format (profession, city_id, date)")
             return
 
-                
-
-        
-    def _set_response(self, code):
-        response = 200
-        header = ['Content-type', 'text/html']
-        message = 'OK'
-        if code == 1:
-            message = "Successful request for {}".format(self.path)
-        elif code == 2:
-            logging.error("%s - Can`t establish connection to database", datetime.now())
-            response = 500
-            message = "Can`t establish connection to database"
-        elif code == 3:
-            logging.error("%s - Command error.The post method only has a task for data parsing.(/parse)", datetime.now())
-            response = 404
-            message = "Command error.The post method only has a task for data parsing.(/parse)"
-        elif code == 4:
-            logging.error("%s - Missing parameters in json format (profession, city_id, date)", datetime.now())
-            response = 500
-            message = "Missing parameters in json format (profession, city_id, date)" 
-        elif code == 5:
-            logging.error("%s - API HH not available", datetime.now())
-            response = 500
-            message = "API HH not available"
+    def _set_response(self, response, header, message):
+        if response == 200:
+            logging.info("%s - %s", datetime.now(), message)
+        else:
+            logging.error("%s - %s", datetime.now(), message)
         self.send_response(response)
         self.send_header(header[0], header[1])
         self.end_headers()
@@ -102,7 +82,7 @@ class S(BaseHTTPRequestHandler):
                     urls.append(vacancy['url'])
                 return urls
         except:
-            self._set_response(5)
+            self._set_response(500, ['Content-type', 'text/html'], "API HH not available")
             return
     
     def get_data_in_vacancy(self, url):
@@ -153,13 +133,14 @@ class S(BaseHTTPRequestHandler):
                     result["published_dt"] = data_in_vacancy['published_at']
                 logging.info('%s - published_dt = %s', datetime.now(), result["published_dt"])
                 logging.info("%s - Job details have been successfully received", datetime.now())
+                req_vacancy.close()
                 return result
             else:
                 logging.error("%s - Error captcha required!", datetime.now())
                 req_vacancy.close()
                 return
         except:
-            self._set_response(5)
+            self._set_response(500, ['Content-type', 'text/html'], "API HH not available")
             return
 
     def load_data(self, connection, vacancy):
@@ -175,9 +156,75 @@ class S(BaseHTTPRequestHandler):
         except:
             logging.error("%s - There was an error entering data into the database.", datetime.now())
 
+    def get_parameters_for_get(self, get_path):
+        try:
+            parameters = {x[:x.find('=')]:x[x.find('=')+1:] for x in get_path[get_path.find('?')+1:].split(sep='&')}
+            if "profession_id" in parameters and "city_id" in parameters:
+                str_parameters = ','.join([parameters[x] for x in ["city_id", "profession_id"]])
+                if "date_from" in parameters or "date_to" in parameters:
+                    str_parameters = str_parameters + ',' + ','.join(["'" + parameters[x] + "'" for x in ["date_from", "date_to"] if x in parameters])
+                logging.info("%s - Parameters collected for get data", datetime.now())
+                return str_parameters
+            else:
+                self._set_response(404, ['Content-type', 'text/html'], "No parameters for sql script")
+        except:
+            self._set_response(404, ['Content-type', 'text/html'], "No parameters for sql script")
+
+
+    
+    def get_data_metrics(self, connection, function, parameters):
+        try:
+            cursor = connection.cursor()
+            cursor.execute(f"select * from {function}({parameters});")
+            result = cursor.fetchall()
+            cursor.close()
+            return result
+        except:
+            self._set_response(500, ['Content-type', 'text/html'], "Failed to retrieve data from database")
+
+    def transform_data(self, metrics, skills):
+        try:
+            result = [{
+                'city_id': x[0],
+                'profession_id': x[1],
+                'dt': str(x[2]),
+                'cnt': x[3],
+                'no_experience_cnt': x[4],
+                'between_1_and_3_cnt': x[5],
+                'between_3_and_6_cnt': x[6],
+                'more_than_6_cnt': x[7],
+                'avg_salary': x[8],
+                'no_experience_avg_salary': x[9],
+                'between_1_and_3_avg_salary': x[10],
+                'between_3_and_6_avg_salary': x[11],
+                'more_than_6_avg_salary': x[12],
+                'flexible_schedule_cnt': x[13],
+                'remote_schedule_cnt': x[14],
+                'full_day_schedule_cnt': x[15],
+                'shift_schedule_cnt': x[16],
+                'fly_in_fly_out_schedule_cnt': x[17],
+                'skills': [{'name': y[3], 'cnt': y[4]} for y in skills if y[0]==x[0] and y[1]==x[1] and y[2]==x[2]]
+                } for x in metrics]
+            js = dumps(result) 
+            return js    
+        except:
+            self._set_response(500, ['Content-type', 'text/html'], "Failed to retrieve data from database")
+
+
     def do_GET(self):
         logging.info("GET request,\nPath: %s\nHeaders:\n%s\n", str(self.path), str(self.headers))
-        self._set_response(1)
+        connection = self.get_connection_database()
+        if connection:
+            if self.path.startswith('/metrics'):
+                parameters = self.get_parameters_for_get(self.path)
+                metrics = self.get_data_metrics(connection,"get_metric", parameters)
+                skills = self.get_data_metrics(connection,"get_skills", parameters)
+                result = self.transform_data(metrics, skills)
+                self._set_response(200, ['Content-type', 'json'], result)
+            else:
+                self._set_response(404, ['Content-type', 'text/html'], "Command error. The get method only has a task for get data. (/metrics)")
+            connection.close()
+            logging.info("%s - Connection to database closed", datetime.now())
 
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
@@ -185,43 +232,30 @@ class S(BaseHTTPRequestHandler):
         logging.info("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
                 str(self.path), str(self.headers), post_data.decode('utf-8'))
         connection = self.get_connection_database()
-        if self.path == '/parse':
-            parameters_for_parse = self.get_parameters_for_parse(post_data)
-            if parameters_for_parse:
-                print(parameters_for_parse)
-                logging.info("%s - Start parse...", datetime.now())
-                for page in range(0, 2):
-                    parameters_for_parse['page'] = page
-                    url_in_page = self.get_url_vacancy_in_page(parameters_for_parse)
-                    for url in url_in_page:
-                        vacancy = self.get_data_in_vacancy(url)
-                        if vacancy:
-                            self.load_data(connection, vacancy)
-                        time.sleep(0.25)
-                        logging.info("%s - Parser sleep...", datetime.now())
-                logging.info("%s - Parse successful!", datetime.now())            
-        else:
-            self._set_response(3)
-        connection.close()
-        logging.info("%s - Connection to database closed", datetime.now())
-
-
+        if connection:
+            if self.path == '/parse':
+                parameters_for_parse = self.get_parameters_for_parse(post_data)
+                if parameters_for_parse:
+                    logging.info(parameters_for_parse)
+                    logging.info("%s - Start parse...", datetime.now())
+                    for page in range(0, 5):
+                        parameters_for_parse['page'] = page
+                        url_in_page = self.get_url_vacancy_in_page(parameters_for_parse)
+                        for url in url_in_page:
+                            vacancy = self.get_data_in_vacancy(url)
+                            if vacancy:
+                                self.load_data(connection, vacancy)
+                            time.sleep(0.25)
+                            logging.info("%s - Parser sleep...", datetime.now())
+                    logging.info("%s - Parse successful!", datetime.now())
+                    self._set_response(200, ['Content-type', 'text/html'], "Successful request for {}".format(self.path))
+            else:
+                self._set_response(404, ['Content-type', 'text/html'], "Command error.The post method only has a task for data parsing.(/parse)")
+            connection.close()
+            logging.info("%s - Connection to database closed", datetime.now())
 
 def run(server_class=HTTPServer, handler_class=S, port=80):
     logging.basicConfig(level=logging.INFO)
-    
-    # logger = logging.getLogger('main')
-    # logger.setLevel(logging.INFO)
-    # cons_handler = logging.StreamHandler()
-    # cons_handler.setLevel(logging.INFO)
-    # file_handler = logging.FileHandler("3_example.log", mode="a")
-    # file_handler.setLevel(logging.ERROR)
-    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # cons_handler.setFormatter(formatter)
-    # file_handler.setFormatter(formatter)
-    # logger.addHandler(cons_handler)
-    # logger.addHandler(file_handler)
-
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     logging.info('%s - Starting httpd...\n', datetime.now())
