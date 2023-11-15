@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 import json
 
 
-url = 'http://localhost:80/metrics'
+url = 'http://localhost:8080/metrics'
 
 data = {
         'profession_id': '1'
