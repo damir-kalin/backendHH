@@ -5,19 +5,30 @@ import json
 from datetime import datetime
 import requests
 import time
-from sys import argv
 from bson.json_util import dumps
+import argparse
+import sys
+import os
 
 class S(BaseHTTPRequestHandler):
 
-    def get_connection_database(self):
+    def __init__(self, request, client_address, server) -> None:
+        self.config = self.get_config()
+        super().__init__(request, client_address, server)
+
+    def get_config(self):
         config = None
         try:
             with open("./_config", 'r', encoding='utf-8') as f:
                 config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
                 logging.info("%s - Read config", datetime.now())
+                logging.info(config)
+                return config
         except:
             logging.error("%s - _config file is missing", datetime.now())
+
+    def get_connection_database(self):
+        config =self.config
         if config:
             try:
                 connection = psycopg2.connect(host=config['HOST'], port=int(config['PORT']), dbname=config['NAME_DATABASE'], user=config['USER'], password=config['PASSWORD'])
@@ -170,8 +181,6 @@ class S(BaseHTTPRequestHandler):
         except:
             self._set_response(404, ['Content-type', 'text/html'], "No parameters for sql script")
 
-
-    
     def get_data_metrics(self, connection, function, parameters):
         try:
             cursor = connection.cursor()
@@ -238,7 +247,7 @@ class S(BaseHTTPRequestHandler):
                 if parameters_for_parse:
                     logging.info(parameters_for_parse)
                     logging.info("%s - Start parse...", datetime.now())
-                    for page in range(0, 5):
+                    for page in range(0, 20):
                         parameters_for_parse['page'] = page
                         url_in_page = self.get_url_vacancy_in_page(parameters_for_parse)
                         for url in url_in_page:
@@ -254,21 +263,24 @@ class S(BaseHTTPRequestHandler):
             connection.close()
             logging.info("%s - Connection to database closed", datetime.now())
 
-def run(server_class=HTTPServer, handler_class=S, port=80):
-    logging.basicConfig(level=logging.INFO)
-    server_address = ('', port)
-    httpd = server_class(server_address, handler_class)
-    logging.info('%s - Starting httpd...\n', datetime.now())
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
+parser = argparse.ArgumentParser(description='Start backend for Statistic HH')
+parser.add_argument('-p', '--port')
+args = parser.parse_args()
+logging.basicConfig(level=logging.INFO)
+host = '127.0.0.1'
+try:
+    port = int(args.port)
+    httpd = HTTPServer((host, port), S)
+    logging.info('%s - host (%s) port(%s).\n', datetime.now(), host, port)
+except:
+    httpd = HTTPServer(('127.0.0.1', 8080), S)
+    logging.info('%s - host (%s) port (%s).\n', datetime.now(), host, '8080')
+logging.info('%s - Starting httpd...\n', datetime.now())
+httpd.serve_forever()
+try:
+    sys.exit(130)
+except SystemExit:
+    os._exit(130)
+finally:
     httpd.server_close()
     logging.info('%s - Stopping httpd...\n', datetime.now())
-
-if __name__ == '__main__':
-    if len(argv) == 2:
-        run(port=int(argv[1]))
-    else:
-        run()
-    
