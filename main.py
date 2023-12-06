@@ -59,6 +59,7 @@ class S(BaseHTTPRequestHandler):
                     date_search = data_in_post['date']
                     logging.info("%s - date = %s", datetime.now(), date_search)
                     parameters['date_from'] = date_search
+                    parameters['date_to'] = date_search
                 except:
                     logging.info("%s - The 'date' parameter is not specified", datetime.now())
                 logging.info("%s - Parameters collected for parsing", datetime.now())

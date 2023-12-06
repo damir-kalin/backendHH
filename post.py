@@ -10,7 +10,7 @@ headers = {'Content-type': 'application/json',
            'Content-Encoding': 'utf-8'}
 data = {'profession':'Аналитик'
         ,'city_id':'1'
-        ,'date': str(date.today() - timedelta(days=3))
+        ,'date': str(date.today() - timedelta(days=8))
         }
 
 print(data)
