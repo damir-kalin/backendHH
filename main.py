@@ -18,14 +18,14 @@ class S(BaseHTTPRequestHandler):
 
     def get_config(self):
         config = None
-        # try:
-        with open('.env', 'r', encoding='utf-8') as f:
-            config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
-            logging.info("%s - Read config", datetime.now())
-            logging.info(config)
-            return config
-        # except:
-        #     logging.error("%s - _config file is missing", datetime.now())
+        try:
+            with open('.env', 'r', encoding='utf-8') as f:
+                config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
+                logging.info("%s - Read config", datetime.now())
+                logging.info(config)
+                return config
+        except:
+            logging.error("%s - .env file is missing", datetime.now())
 
     def get_connection_database(self):
         config =self.config
