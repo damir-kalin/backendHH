@@ -1,9 +1,10 @@
 import requests
 import json
 from datetime import date, datetime, timedelta
+import os
 
 
-# response = requests.post('http://localhost:8080/parse/1/1')
+
 url = 'http://localhost:80/parse'
 headers = {'Content-type': 'application/json',
            'Accept': 'text/plain',
@@ -18,3 +19,5 @@ print(data)
 answer = requests.post(url, headers=headers, json=data)
 
 print(answer.headers, answer.status_code, answer.text) 
+# with open(os.getcwd() + '/env', 'r', encoding='utf-8') as f:
+#         print(f.readlines())

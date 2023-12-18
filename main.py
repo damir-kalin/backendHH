@@ -19,7 +19,7 @@ class S(BaseHTTPRequestHandler):
     def get_config(self):
         config = None
         # try:
-        with open(os.getcwd()+ "\env", 'r', encoding='utf-8') as f:
+        with open(os.getcwd() + '/env', 'r', encoding='utf-8') as f:
             config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
             logging.info("%s - Read config", datetime.now())
             logging.info(config)
