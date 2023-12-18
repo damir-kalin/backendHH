@@ -18,14 +18,14 @@ class S(BaseHTTPRequestHandler):
 
     def get_config(self):
         config = None
-        try:
-            with open(".env", 'r', encoding='utf-8') as f:
-                config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
-                logging.info("%s - Read config", datetime.now())
-                logging.info(config)
-                return config
-        except:
-            logging.error("%s - _config file is missing", datetime.now())
+        # try:
+        with open(".env", 'r', encoding='utf-8') as f:
+            config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
+            logging.info("%s - Read config", datetime.now())
+            logging.info(config)
+            return config
+        # except:
+        #     logging.error("%s - _config file is missing", datetime.now())
 
     def get_connection_database(self):
         config =self.config
@@ -274,8 +274,8 @@ try:
     httpd = HTTPServer((host, port), S)
     logging.info('%s - host (%s) port(%s).\n', datetime.now(), host, port)
 except:
-    httpd = HTTPServer(('127.0.0.1', 8080), S)
-    logging.info('%s - host (%s) port (%s).\n', datetime.now(), host, '8080')
+    httpd = HTTPServer(('127.0.0.1', 80), S)
+    logging.info('%s - host (%s) port (%s).\n', datetime.now(), host, '80')
 logging.info('%s - Starting httpd...\n', datetime.now())
 httpd.serve_forever()
 try:
