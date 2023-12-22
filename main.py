@@ -257,7 +257,7 @@ parser = argparse.ArgumentParser(description='Start backend for Statistic HH')
 parser.add_argument('-p', '--port')
 args = parser.parse_args()
 logging.basicConfig(level=logging.INFO)
-host = '127.0.0.1'
+host = '0.0.0.1'
 
 envs = None
 try:
@@ -273,7 +273,7 @@ try:
     httpd = HTTPServer((host, port), S)
     logging.info('%s - host (%s) port(%s).', datetime.now(), host, port)
 except:
-    httpd = HTTPServer(('0.0.0.1', 80), S)
+    httpd = HTTPServer((host, 80), S)
     logging.info('%s - host (%s) port (%s).', datetime.now(), host, '80')
 logging.info('%s - Starting httpd...\n', datetime.now())
 httpd.serve_forever()
