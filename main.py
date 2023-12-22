@@ -273,8 +273,8 @@ try:
     httpd = HTTPServer((host, port), S)
     logging.info('%s - host (%s) port(%s).', datetime.now(), host, port)
 except:
-    httpd = HTTPServer((host, 8080), S)
-    logging.info('%s - host (%s) port (%s).', datetime.now(), host, '8080')
+    httpd = HTTPServer((host, 80), S)
+    logging.info('%s - host (%s) port (%s).', datetime.now(), host, '80')
 logging.info('%s - Starting httpd...\n', datetime.now())
 httpd.serve_forever()
 try:
