@@ -257,7 +257,7 @@ parser = argparse.ArgumentParser(description='Start backend for Statistic HH')
 parser.add_argument('-p', '--port')
 args = parser.parse_args()
 logging.basicConfig(level=logging.INFO)
-host = '0.0.0.1'
+host = '0.0.0.0'
 
 envs = None
 try:
