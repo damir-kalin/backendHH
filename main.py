@@ -12,26 +12,15 @@ import os
 
 class S(BaseHTTPRequestHandler):
 
-    def __init__(self, request, client_address, server) -> None:
-        self.config = self.get_config()
-        super().__init__(request, client_address, server)
-
-    def get_config(self):
-        config = None
-        try:
-            with open('.env', 'r', encoding='utf-8') as f:
-                config =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
-                logging.info("%s - Read config", datetime.now())
-                logging.info(config)
-                return config
-        except:
-            logging.error("%s - .env file is missing", datetime.now())
-
     def get_connection_database(self):
-        config =self.config
-        if config:
+        global envs
+        if envs:
             try:
-                connection = psycopg2.connect(host=config['HOST'], port=int(config['PORT']), dbname=config['NAME_DATABASE'], user=config['USER'], password=config['PASSWORD'])
+                connection = psycopg2.connect(host=envs['HOST'], 
+                                              port=int(envs['PORT']), 
+                                              dbname=envs['NAME_DATABASE'], 
+                                              user=envs['USER'], 
+                                              password=envs['PASSWORD'])
                 logging.info("%s - Database connection successful", datetime.now())
                 return connection
             except:
@@ -269,13 +258,23 @@ parser.add_argument('-p', '--port')
 args = parser.parse_args()
 logging.basicConfig(level=logging.INFO)
 host = '127.0.0.1'
+
+envs = None
+try:
+    with open('.env', 'r', encoding='utf-8') as f:
+        envs =  {x.strip().split('=')[0]:x.strip().split('=')[1] for x in f.readlines()}
+        logging.info("%s - Read .env file successfull", datetime.now())
+        logging.info(envs)
+except:
+    logging.error("%s - .env file is missing", datetime.now())
+
 try:
     port = int(args.port)
     httpd = HTTPServer((host, port), S)
-    logging.info('%s - host (%s) port(%s).\n', datetime.now(), host, port)
+    logging.info('%s - host (%s) port(%s).', datetime.now(), host, port)
 except:
     httpd = HTTPServer(('127.0.0.1', 80), S)
-    logging.info('%s - host (%s) port (%s).\n', datetime.now(), host, '80')
+    logging.info('%s - host (%s) port (%s).', datetime.now(), host, '80')
 logging.info('%s - Starting httpd...\n', datetime.now())
 httpd.serve_forever()
 try:
