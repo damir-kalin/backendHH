@@ -1,0 +1,7 @@
+/venv/
+/app/logs/*.log
+/pipline/logs/full_job_logs/*.log
+/pipline/logs/incr_job_logs/*.log
+docker-compose.yaml
+DockerfileDB
+DockerfileNGINX

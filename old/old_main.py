@@ -73,7 +73,7 @@ class S(BaseHTTPRequestHandler):
     def get_url_vacancy_in_page(self, parameters):
         logging.info('%s - Get search pages with parameters %s', datetime.now(), parameters)
         try:
-            req_page = requests.get('https://api.hh.ru/vacancies', parameters)
+            req_page = requestsArgumentParser.get('https://api.hh.ru/vacancies', parameters)
             urls = []
             if req_page.status_code == 200:
                 data_in_page = json.loads(req_page.content.decode())

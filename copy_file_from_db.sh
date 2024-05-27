@@ -1,0 +1,1 @@
+docker cp $(pwd)/db stand-db:/app/db
