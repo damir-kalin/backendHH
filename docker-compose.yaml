@@ -1,0 +1,84 @@
+version: "3"
+
+services:
+
+  postgres:
+    build:
+      context: ./db
+    image: my-postgres:local
+    container_name: stand-db
+    hostname: stand-db
+    restart: always
+    user: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    ports:
+      - "5432:5432"
+    networks:
+      default:
+        ipv4_address: 172.16.1.5
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-U", "postgres"]
+
+  api:
+    build: ./app
+    container_name: api
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      API_HOST: ${API_HOST}
+      API_PORT: ${API_PORT}
+    ports:
+      - 8000:8000
+    networks:
+      default:
+        ipv4_address: 172.16.1.6
+    depends_on:
+      - postgres
+
+
+  tg_bot:
+    build: ./tg_bot
+    container_name: tg_bot
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      API_HOST: ${API_HOST}
+      API_PORT: ${API_PORT}
+      TG_TOKEN_BOT: ${TG_TOKEN_BOT}
+    ports:
+      - 8080:8080
+    networks:
+      default:
+        ipv4_address: 172.16.1.3
+
+  pipline:
+    build: ./pipline
+    container_name: pipline
+    restart: always
+    ports:
+      - 80:80
+    networks:
+      default:
+        ipv4_address: 172.16.1.4
+
+
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.1.0/24
