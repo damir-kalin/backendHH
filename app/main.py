@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 
-from model import core
-from model.database import engine
+# from model import core
+# from model.database import engine
 
-from routers.parse import router as parse_router
-from routers.exchange_rates import router as exchange_rates_router
-from routers.metrics import router as metrics_router
-from routers.skills import router as skills_router
+from routers.parse import parse_router
+from routers.exchange_rates import exchange_rates_router
+from routers.metrics import metrics_router
+from routers.skills import skills_router
+
 
 # core.Base.metadata.create_all(bind=engine)
 

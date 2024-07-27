@@ -1,7 +1,13 @@
-/venv/
+**.env
+
+.mypy_cache/
+.vscode/
+**venv/
+**__pycache__/
+tg_bot/venv/
+__pycache__/
 /app/logs/*.log
 /pipline/logs/full_job_logs/*.log
 /pipline/logs/incr_job_logs/*.log
 docker-compose.yaml
-DockerfileDB
-DockerfileNGINX
+comand.txt

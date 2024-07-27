@@ -1,0 +1,1 @@
+10 3 * * * /venv/bin/python3 /app/incr_job.py > /app/cron_log.log 2>&1

@@ -6,10 +6,10 @@ from logger import logger
 
 
 
-router = APIRouter()
+parse_router = APIRouter()
 yesterday = str((datetime.now() - timedelta(days=1)).date())
 
-@router.post("/")
+@parse_router.post("/")
 def parse(profession:str, date:str = yesterday, page:int = 0, per_page:int = 100, area:int = 113):
     logger.info(f"The task of parsing data from the HH API is launched..Parameters: profession-{profession}, date-{date}, page-{page}, per_page-{per_page}, area-{area}.")
     run_parse(profession, date, page, per_page, area)

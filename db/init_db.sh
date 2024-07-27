@@ -24,7 +24,7 @@ create table if not exists d_query_profession(
 	constraint d_query_profession_pkey primary key (id)
 );
 insert into d_query_profession(name) values('Data engineer');
-insert into d_query_profession(name) values('Analytic');
+insert into d_query_profession(name) values('Data analyst');
 
 create table if not exists stg_exchange_rates(
 	id serial not null,
@@ -73,7 +73,6 @@ create table if not exists d_exchange_rates(
 	exchange_rates_id varchar(20) not null,
 	num_code varchar(5) not null,
 	char_code varchar(5) not null,
-	nominal int not null,
 	name varchar(70) not null,
 	constraint d_exchange_rates_pkey primary key (id),
 	constraint uq_d_exchange_rates_char_code unique (char_code)
@@ -84,6 +83,7 @@ create table if not exists fct_exchange_rates(
 	id_exchange_rates bigint not null,
 	value numeric(10, 4) not null,
 	previous numeric(10, 4) not null,
+	nominal int not null,
 	published_at timestamp not null,
 	dt date,
 	constraint fct_exchange_rates_pkey primary key (id)
@@ -124,7 +124,6 @@ constraint dm_skills_pkey primary key (id),
 constraint dm_skills_uq unique(city_name, query_profession_name, skill_name, dt)
 );
 
-copy d_city from '/app/db/city.csv' with delimiter '|' csv header;
+copy d_city from '/app/city.csv' with delimiter '|' csv header;
 
 EOSQL
-

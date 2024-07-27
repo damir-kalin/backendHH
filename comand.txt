@@ -7,7 +7,7 @@ pip-sync
 
 docker run --rm -d --name stand-db  -p 5432:5432 -v db_volume:/app --net=network_db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=stand -e POSTGRES_DB=stand_db postgres:14
 
-uvicorn first_main:app --reload --host 0.0.0.0 --port 8080
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-crontab -e 
+crontab -e
 10 11 * * * cd /home/damir/PetProjects/backendHH/test_cron && /home/damir/PetProjects/backendHH/venv/bin/python3 test.py

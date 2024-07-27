@@ -2,28 +2,24 @@ import os
 from datetime import datetime, timedelta
 
 import requests
-from dotenv import load_dotenv
 from psycopg2 import connect
 import logging
 import argparse
+from dotenv import load_dotenv
 
 load_dotenv()
-
 POSTGRES_HOST = os.getenv('POSTGRES_HOST')
 POSTGRES_PORT = os.getenv('POSTGRES_PORT')
 POSTGRES_DB = os.getenv('POSTGRES_DB')
 POSTGRES_USER = os.getenv('POSTGRES_USER')
 POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
 
-parser = argparse.ArgumentParser(description='Start backend for Statistic HH')
-parser.add_argument('-i', '--ip')
-parser.add_argument('-p', '--port')
-args = parser.parse_args()
-HOST = args.ip
-PORT = args.port
+HOST = os.getenv('API_HOST')
+PORT = os.getenv('API_PORT')
 
-file_log = logging.FileHandler(f'./logs/full_job_logs/{datetime.now().strftime("%d-%m-%Y_%H:%M:%S")} full_job.log')
+
 console_out = logging.StreamHandler()
+file_log = logging.FileHandler(f'/app/logs/full_job_logs/{datetime.now().strftime("%d-%m-%Y_%H:%M:%S")} full_job.log')
 logger = logging.getLogger(__name__)
 FORMAT = '[%(asctime)s | %(levelname)s]: %(message)s'
 logging.basicConfig(handlers=(file_log, console_out), level=logging.INFO, format=FORMAT)
@@ -31,8 +27,8 @@ logging.basicConfig(handlers=(file_log, console_out), level=logging.INFO, format
 cities  = ['1', '2']
 logger.info(f"Cities for parse:{cities}")
 
-end_date = datetime(year=2024, month=5, day=22).date()
-delta = 3
+end_date = datetime.now().date()
+delta = 1
 dates_from_parse  = [(end_date - timedelta(days =x)).isoformat() for x in range(delta)]
 logger.info(f"Dates for parse - {dates_from_parse}")
 
@@ -60,7 +56,7 @@ with connect(host=POSTGRES_HOST, port=POSTGRES_PORT, dbname=POSTGRES_DB, user=PO
     cur.execute("select name from d_query_profession;")
     logger.info("Getting data about professions in the database")
     for value in  cur.fetchall():
-        profession = value[0] 
+        profession = value[0]
         logger.info(f"Start parse data for profession - {profession}")
         for date in dates_from_parse:
             logger.info(f"Date - {date}")
@@ -80,7 +76,7 @@ with connect(host=POSTGRES_HOST, port=POSTGRES_PORT, dbname=POSTGRES_DB, user=PO
                         raise RuntimeError
 
 # Создаем метрики
-path_script = os.path.dirname(os.path.abspath(__file__)) + '/sql/full_insert_data.sql' 
+path_script = os.path.dirname(os.path.abspath(__file__)) + '/sql/full_insert_data.sql'
 logger.info(f"Path for script - {path_script}")
 with open(path_script, 'r') as file, connect(host=POSTGRES_HOST, port=POSTGRES_PORT, dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD) as conn:
     cur = conn.cursor()
